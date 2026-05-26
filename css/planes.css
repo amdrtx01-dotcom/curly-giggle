@@ -1,0 +1,244 @@
+/* Sky Aces - 3D Fighter Jets HUD Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: #b8ffb8;
+}
+
+#planes-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+}
+
+#planes-hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    text-shadow:
+        0 0 4px rgba(0, 255, 128, 0.7),
+        0 0 10px rgba(0, 255, 128, 0.4);
+}
+
+.hud-corner {
+    position: absolute;
+    padding: 14px 18px;
+    background: linear-gradient(135deg,
+        rgba(0, 30, 10, 0.25),
+        rgba(0, 60, 30, 0.15));
+    border: 1px solid rgba(120, 255, 140, 0.35);
+    backdrop-filter: blur(2px);
+    border-radius: 4px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    line-height: 1.55;
+    min-width: 200px;
+}
+
+.top-left    { top: 18px;    left: 18px; }
+.top-right   { top: 18px;    right: 18px; text-align: right; }
+.bottom-left { bottom: 18px; left: 18px; }
+.bottom-right{ bottom: 18px; right: 18px; text-align: right; }
+
+.hud-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: baseline;
+    border-bottom: 1px dashed rgba(120, 255, 140, 0.15);
+    padding: 2px 0;
+}
+.hud-row:last-child { border-bottom: none; }
+
+.top-right .hud-row { justify-content: flex-end; }
+
+.hud-tag {
+    color: rgba(180, 255, 200, 0.7);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.hud-unit {
+    font-size: 10px;
+    color: rgba(180, 255, 200, 0.55);
+    margin-left: 4px;
+}
+
+#hud-plane {
+    color: #ffd86b;
+    font-weight: bold;
+    font-size: 16px;
+    text-shadow: 0 0 6px rgba(255, 200, 60, 0.7);
+}
+
+.hud-ab.active #hud-ab-state {
+    color: #ff8040;
+    text-shadow: 0 0 8px rgba(255, 100, 40, 0.9);
+    font-weight: bold;
+}
+
+.hud-section-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(180, 255, 200, 0.6);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.hud-key {
+    font-size: 12px;
+    color: rgba(200, 255, 210, 0.85);
+    padding: 1px 0;
+}
+
+kbd {
+    display: inline-block;
+    min-width: 22px;
+    padding: 1px 5px;
+    margin: 0 2px;
+    background: rgba(0, 80, 40, 0.45);
+    border: 1px solid rgba(120, 255, 140, 0.55);
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 10px;
+    text-align: center;
+    color: #d8ffd8;
+}
+
+.hud-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px;
+    height: 220px;
+    pointer-events: none;
+}
+
+.hud-reticle {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 60px; height: 60px;
+    margin: -30px 0 0 -30px;
+    border: 2px solid rgba(120, 255, 140, 0.65);
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(120, 255, 140, 0.35);
+}
+.hud-reticle::before,
+.hud-reticle::after {
+    content: '';
+    position: absolute;
+    background: rgba(120, 255, 140, 0.65);
+}
+.hud-reticle::before {
+    top: 50%; left: -18px;
+    width: 14px; height: 2px;
+    margin-top: -1px;
+    box-shadow: 64px 0 rgba(120, 255, 140, 0.65);
+}
+.hud-reticle::after {
+    top: -18px; left: 50%;
+    width: 2px; height: 14px;
+    margin-left: -1px;
+    box-shadow: 0 64px rgba(120, 255, 140, 0.65);
+}
+
+#maneuver-banner {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    padding: 12px 32px;
+    background: linear-gradient(180deg, rgba(80, 20, 0, 0.55), rgba(180, 60, 0, 0.25));
+    border: 1px solid rgba(255, 120, 40, 0.7);
+    border-radius: 6px;
+    transition: opacity 0.25s ease;
+    box-shadow: 0 0 28px rgba(255, 120, 40, 0.5);
+}
+
+#maneuver-banner.hidden { opacity: 0; }
+
+.banner-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: rgba(255, 200, 160, 0.8);
+}
+.banner-name {
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: #ffd86b;
+    text-shadow: 0 0 16px rgba(255, 180, 60, 0.95);
+    margin-top: 2px;
+}
+
+#plane-strip {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    padding: 6px;
+    background: rgba(0, 20, 10, 0.5);
+    border: 1px solid rgba(120, 255, 140, 0.3);
+    border-radius: 6px;
+}
+
+.plane-chip {
+    padding: 6px 14px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: rgba(180, 255, 200, 0.7);
+    border: 1px solid transparent;
+    border-radius: 3px;
+    transition: all 0.15s ease;
+}
+
+.plane-chip.active {
+    color: #ffd86b;
+    background: rgba(80, 60, 0, 0.5);
+    border-color: rgba(255, 200, 60, 0.7);
+    box-shadow: 0 0 12px rgba(255, 180, 60, 0.5);
+}
+
+#stall-warning {
+    position: absolute;
+    top: 32%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 28px;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 6px;
+    color: #ff3030;
+    background: rgba(80, 0, 0, 0.55);
+    border: 2px solid rgba(255, 80, 80, 0.8);
+    border-radius: 4px;
+    text-shadow: 0 0 14px rgba(255, 60, 60, 0.95);
+    animation: blink 0.5s steps(2) infinite;
+}
+
+.hidden { display: none !important; }
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+}
