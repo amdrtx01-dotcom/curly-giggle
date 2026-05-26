@@ -523,10 +523,13 @@ canvas {
 /* === Loading Screen === */
 #loading-screen {
     background: linear-gradient(135deg, #0a0e17 0%, #0d1f3c 100%);
+    z-index: 1000;
+}
+
+#loading-screen.active {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
 }
 
 .loading-content {
