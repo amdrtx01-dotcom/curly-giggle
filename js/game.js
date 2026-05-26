@@ -25,6 +25,7 @@ class Game {
         this.cameraOffset = new THREE.Vector3(0, 8, 18);
         this.cameraLookOffset = new THREE.Vector3(0, 2, 0);
         this.lastFrameTime = 0;
+        this.cameraMode = 'third'; // 'third' or 'fpv'
 
         this.animationId = null;
 
@@ -270,7 +271,31 @@ class Game {
         this.hud.gameTime = this.gameTime;
     }
 
+    setCameraMode(mode) {
+        this.cameraMode = mode;
+        const gameScreen = document.getElementById('game-screen');
+        const indicator = document.getElementById('camera-mode-indicator');
+
+        if (mode === 'fpv') {
+            this.drone.group.visible = false;
+            gameScreen.classList.add('fpv-active');
+            if (indicator) indicator.textContent = 'FPV MODE';
+            this.camera.fov = 110;
+        } else {
+            this.drone.group.visible = true;
+            gameScreen.classList.remove('fpv-active');
+            if (indicator) indicator.textContent = '';
+            this.camera.fov = 65;
+        }
+        this.camera.updateProjectionMatrix();
+    }
+
     updateCamera(dt) {
+        if (this.cameraMode === 'fpv') {
+            this.updateFPVCamera(dt);
+            return;
+        }
+
         const dronePos = this.drone.getPosition();
         const droneQuat = this.drone.group.quaternion;
 
@@ -293,6 +318,16 @@ class Game {
                 3, 20
             );
         }
+    }
+
+    updateFPVCamera(dt) {
+        const fpvPos = this.drone.getFPVCameraPosition();
+        const fpvTarget = this.drone.getFPVCameraTarget();
+
+        this.camera.position.lerp(fpvPos, 15 * dt);
+        this.camera.lookAt(fpvTarget);
+        this.camera.fov = 110;
+        this.camera.updateProjectionMatrix();
     }
 
     render() {

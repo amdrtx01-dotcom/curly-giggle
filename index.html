@@ -66,6 +66,7 @@
                 <div class="control-item"><kbd>ЛКМ</kbd><span>Стрельба</span></div>
                 <div class="control-item"><kbd>R</kbd><span>Ракета</span></div>
                 <div class="control-item"><kbd>ESC</kbd><span>Пауза / Меню</span></div>
+                <div class="control-item"><kbd>V</kbd><span>FPV / 3-е лицо</span></div>
                 <div class="control-item"><kbd>TAB</kbd><span>Карта</span></div>
             </div>
             <button class="back-btn" id="btn-back-controls">&#8592; НАЗАД</button>
@@ -75,6 +76,8 @@
     <!-- Game Screen -->
     <div id="game-screen" class="screen">
         <canvas id="game-canvas"></canvas>
+        <div class="fpv-vignette"></div>
+        <div id="camera-mode-indicator"></div>
 
         <!-- HUD -->
         <div id="hud">
