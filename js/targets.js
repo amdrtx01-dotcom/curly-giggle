@@ -11,16 +11,16 @@ class Target {
         this.points = 100;
         this.group = new THREE.Group();
 
-        this.buildModel(type);
-        this.group.position.copy(position);
-        scene.add(this.group);
-
         this.moveSpeed = 0;
         this.moveDir = new THREE.Vector3();
         this.moveTimer = 0;
         this.hoverOffset = 0;
         this.shootTimer = 0;
         this.canShoot = false;
+
+        this.buildModel(type);
+        this.group.position.copy(position);
+        scene.add(this.group);
     }
 
     buildModel(type) {
