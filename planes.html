@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Aces - 3D Fighter Jets</title>
+    <link rel="stylesheet" href="css/planes.css">
+</head>
+<body>
+    <canvas id="planes-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="planes-hud">
+        <div class="hud-corner top-left">
+            <div class="hud-row"><span class="hud-tag">САМОЛЁТ</span><span id="hud-plane">Су-27</span></div>
+            <div class="hud-row"><span class="hud-tag">СКОРОСТЬ</span><span id="hud-speed">0</span><span class="hud-unit">км/ч</span></div>
+            <div class="hud-row"><span class="hud-tag">ВЫСОТА</span><span id="hud-alt">0</span><span class="hud-unit">м</span></div>
+            <div class="hud-row"><span class="hud-tag">ТЯГА</span><span id="hud-throttle">75</span><span class="hud-unit">%</span></div>
+            <div class="hud-row hud-ab" id="hud-ab"><span class="hud-tag">ФОРСАЖ</span><span id="hud-ab-state">ВЫКЛ</span></div>
+        </div>
+
+        <div class="hud-corner top-right">
+            <div class="hud-row"><span class="hud-tag">КРЕН</span><span id="hud-roll">0&deg;</span></div>
+            <div class="hud-row"><span class="hud-tag">ТАНГАЖ</span><span id="hud-pitch">0&deg;</span></div>
+            <div class="hud-row"><span class="hud-tag">КУРС</span><span id="hud-heading">0&deg;</span></div>
+            <div class="hud-row"><span class="hud-tag">G-СИЛА</span><span id="hud-g">1.0</span></div>
+        </div>
+
+        <div class="hud-corner bottom-left">
+            <div class="hud-section-title">МАНЁВРЫ</div>
+            <div class="hud-key"><kbd>C</kbd> Кобра Пугачёва</div>
+            <div class="hud-key"><kbd>L</kbd> Петля Нестерова</div>
+            <div class="hud-key"><kbd>B</kbd> Бочка</div>
+            <div class="hud-key"><kbd>I</kbd> Иммельман</div>
+            <div class="hud-key"><kbd>H</kbd> Чакра Фролова</div>
+            <div class="hud-key"><kbd>K</kbd> Колокол</div>
+        </div>
+
+        <div class="hud-corner bottom-right">
+            <div class="hud-section-title">УПРАВЛЕНИЕ</div>
+            <div class="hud-key"><kbd>W</kbd>/<kbd>S</kbd> Тангаж</div>
+            <div class="hud-key"><kbd>A</kbd>/<kbd>D</kbd> Крен</div>
+            <div class="hud-key"><kbd>Q</kbd>/<kbd>E</kbd> Руль</div>
+            <div class="hud-key"><kbd>SHIFT</kbd>/<kbd>CTRL</kbd> Газ</div>
+            <div class="hud-key"><kbd>F</kbd> Форсаж</div>
+            <div class="hud-key"><kbd>V</kbd> Камера</div>
+            <div class="hud-key"><kbd>1</kbd>-<kbd>5</kbd> Сменить самолёт</div>
+        </div>
+
+        <!-- Center HUD reticle / horizon ladder -->
+        <div class="hud-center">
+            <div class="hud-reticle"></div>
+        </div>
+
+        <!-- Maneuver banner -->
+        <div id="maneuver-banner" class="hidden">
+            <div class="banner-label">МАНЁВР</div>
+            <div class="banner-name" id="banner-name">КОБРА</div>
+        </div>
+
+        <!-- Plane select strip -->
+        <div id="plane-strip">
+            <div class="plane-chip" data-idx="0">1 Су-27</div>
+            <div class="plane-chip" data-idx="1">2 Су-24</div>
+            <div class="plane-chip" data-idx="2">3 Су-35</div>
+            <div class="plane-chip" data-idx="3">4 Су-57</div>
+            <div class="plane-chip" data-idx="4">5 МиГ-29</div>
+        </div>
+
+        <!-- Stall warning -->
+        <div id="stall-warning" class="hidden">СВАЛИВАНИЕ</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/planes/textures.js"></script>
+    <script src="js/planes/world.js"></script>
+    <script src="js/planes/plane.js"></script>
+    <script src="js/planes/effects.js"></script>
+    <script src="js/planes/flight.js"></script>
+    <script src="js/planes/maneuvers.js"></script>
+    <script src="js/planes/hud.js"></script>
+    <script src="js/planes/controls.js"></script>
+    <script src="js/planes/main.js"></script>
+</body>
+</html>
