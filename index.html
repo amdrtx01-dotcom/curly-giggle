@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone Strike - 3D Drone Combat Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Main Menu -->
+    <div id="menu-screen" class="screen active">
+        <canvas id="menu-bg-canvas"></canvas>
+        <div class="menu-overlay">
+            <div class="menu-title">
+                <h1>DRONE<span class="accent">STRIKE</span></h1>
+                <p class="subtitle">TACTICAL AERIAL COMBAT</p>
+            </div>
+            <div class="menu-buttons">
+                <button class="menu-btn" id="btn-levels">
+                    <span class="btn-icon">&#9876;</span>
+                    <span class="btn-text">
+                        <span class="btn-title">УРОВНИ</span>
+                        <span class="btn-desc">Уничтожай цели на каждом уровне</span>
+                    </span>
+                </button>
+                <button class="menu-btn" id="btn-freefly">
+                    <span class="btn-icon">&#9992;</span>
+                    <span class="btn-text">
+                        <span class="btn-title">СВОБОДНЫЙ ПОЛЁТ</span>
+                        <span class="btn-desc">Исследуй мир без ограничений</span>
+                    </span>
+                </button>
+                <button class="menu-btn" id="btn-controls">
+                    <span class="btn-icon">&#9881;</span>
+                    <span class="btn-text">
+                        <span class="btn-title">УПРАВЛЕНИЕ</span>
+                        <span class="btn-desc">Клавиши и настройки</span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Select Screen -->
+    <div id="level-select-screen" class="screen">
+        <div class="screen-overlay">
+            <h2 class="screen-title">ВЫБОР УРОВНЯ</h2>
+            <div class="level-grid" id="level-grid"></div>
+            <button class="back-btn" id="btn-back-levels">&#8592; НАЗАД</button>
+        </div>
+    </div>
+
+    <!-- Controls Screen -->
+    <div id="controls-screen" class="screen">
+        <div class="screen-overlay">
+            <h2 class="screen-title">УПРАВЛЕНИЕ</h2>
+            <div class="controls-grid">
+                <div class="control-item"><kbd>W</kbd><span>Вперёд</span></div>
+                <div class="control-item"><kbd>S</kbd><span>Назад</span></div>
+                <div class="control-item"><kbd>A</kbd><span>Влево</span></div>
+                <div class="control-item"><kbd>D</kbd><span>Вправо</span></div>
+                <div class="control-item"><kbd>SHIFT</kbd><span>Вверх</span></div>
+                <div class="control-item"><kbd>CTRL</kbd><span>Вниз</span></div>
+                <div class="control-item"><kbd>Q / E</kbd><span>Поворот</span></div>
+                <div class="control-item"><kbd>МЫШЬ</kbd><span>Камера</span></div>
+                <div class="control-item"><kbd>ЛКМ</kbd><span>Стрельба</span></div>
+                <div class="control-item"><kbd>R</kbd><span>Ракета</span></div>
+                <div class="control-item"><kbd>ESC</kbd><span>Пауза / Меню</span></div>
+                <div class="control-item"><kbd>V</kbd><span>FPV / 3-е лицо</span></div>
+                <div class="control-item"><kbd>TAB</kbd><span>Карта</span></div>
+            </div>
+            <button class="back-btn" id="btn-back-controls">&#8592; НАЗАД</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <canvas id="game-canvas"></canvas>
+        <div class="fpv-vignette"></div>
+        <div id="camera-mode-indicator"></div>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-top">
+                <div class="hud-item" id="hud-score">
+                    <span class="hud-label">СЧЁТ</span>
+                    <span class="hud-value" id="score-value">0</span>
+                </div>
+                <div class="hud-item" id="hud-targets">
+                    <span class="hud-label">ЦЕЛИ</span>
+                    <span class="hud-value" id="targets-value">0/0</span>
+                </div>
+                <div class="hud-item" id="hud-time">
+                    <span class="hud-label">ВРЕМЯ</span>
+                    <span class="hud-value" id="time-value">0:00</span>
+                </div>
+            </div>
+            <div class="hud-bottom">
+                <div class="hud-left-panel">
+                    <div class="hud-bar">
+                        <span class="bar-label">HP</span>
+                        <div class="bar-track"><div class="bar-fill health-fill" id="health-bar"></div></div>
+                        <span class="bar-value" id="health-value">100</span>
+                    </div>
+                    <div class="hud-bar">
+                        <span class="bar-label">FUEL</span>
+                        <div class="bar-track"><div class="bar-fill fuel-fill" id="fuel-bar"></div></div>
+                        <span class="bar-value" id="fuel-value">100</span>
+                    </div>
+                </div>
+                <div class="hud-center">
+                    <div class="crosshair">
+                        <div class="crosshair-line top"></div>
+                        <div class="crosshair-line bottom"></div>
+                        <div class="crosshair-line left"></div>
+                        <div class="crosshair-line right"></div>
+                        <div class="crosshair-dot"></div>
+                    </div>
+                </div>
+                <div class="hud-right-panel">
+                    <div class="hud-info">
+                        <span class="info-label">ВЫСОТА</span>
+                        <span class="info-value" id="altitude-value">0m</span>
+                    </div>
+                    <div class="hud-info">
+                        <span class="info-label">СКОРОСТЬ</span>
+                        <span class="info-value" id="speed-value">0 km/h</span>
+                    </div>
+                    <div class="hud-info">
+                        <span class="info-label">РАКЕТЫ</span>
+                        <span class="info-value" id="rockets-value">8</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Minimap -->
+            <div id="minimap">
+                <canvas id="minimap-canvas" width="160" height="160"></canvas>
+            </div>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pause-menu" class="overlay-menu hidden">
+            <h2>ПАУЗА</h2>
+            <button class="menu-btn small" id="btn-resume">ПРОДОЛЖИТЬ</button>
+            <button class="menu-btn small" id="btn-restart">РЕСТАРТ</button>
+            <button class="menu-btn small" id="btn-quit">В МЕНЮ</button>
+        </div>
+
+        <!-- Level Complete -->
+        <div id="level-complete" class="overlay-menu hidden">
+            <h2>УРОВЕНЬ ПРОЙДЕН!</h2>
+            <div class="stars" id="stars-display"></div>
+            <p id="complete-score"></p>
+            <p id="complete-time"></p>
+            <button class="menu-btn small" id="btn-next-level">СЛЕДУЮЩИЙ УРОВЕНЬ</button>
+            <button class="menu-btn small" id="btn-complete-menu">В МЕНЮ</button>
+        </div>
+
+        <!-- Game Over -->
+        <div id="game-over" class="overlay-menu hidden">
+            <h2>ДРОН УНИЧТОЖЕН</h2>
+            <p id="gameover-score"></p>
+            <button class="menu-btn small" id="btn-retry">ПОВТОРИТЬ</button>
+            <button class="menu-btn small" id="btn-gameover-menu">В МЕНЮ</button>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-content">
+            <h2>ЗАГРУЗКА...</h2>
+            <div class="loading-bar">
+                <div class="loading-fill" id="loading-fill"></div>
+            </div>
+            <p id="loading-text">Подготовка дрона...</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/drone.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/effects.js"></script>
+    <script src="js/weapons.js"></script>
+    <script src="js/targets.js"></script>
+    <script src="js/levels.js"></script>
+    <script src="js/hud.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
