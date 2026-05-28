@@ -1,9 +1,10 @@
 /* Weapons System */
 
 class WeaponsManager {
-    constructor(scene, effects) {
+    constructor(scene, effects, destruction) {
         this.scene = scene;
         this.effects = effects;
+        this.destruction = destruction || null;
         this.bullets = [];
         this.rockets = [];
         this.bulletSpeed = 200;
@@ -12,6 +13,15 @@ class WeaponsManager {
         this.lastFireTime = 0;
         this.bulletDamage = 10;
         this.rocketDamage = 50;
+    }
+
+    setDestruction(d) { this.destruction = d; }
+
+    _detonateRocket(pos) {
+        this.effects.createExplosion(pos, 9, 0xff4400);
+        if (this.destruction) {
+            this.destruction.applyExplosion(pos, 16, 180);
+        }
     }
 
     fireBullet(position, direction, time) {
@@ -149,7 +159,7 @@ class WeaponsManager {
                     const dist = Utils.distance3D(r.group.position, target.getPosition());
                     if (dist < target.hitRadius + 2) {
                         hits.push({ target: target, damage: r.damage, position: r.group.position.clone() });
-                        this.effects.createExplosion(r.group.position.clone(), 8, 0xff4400);
+                        this._detonateRocket(r.group.position.clone());
                         r.life = 0;
                         break;
                     }
@@ -158,8 +168,23 @@ class WeaponsManager {
 
             // Ground hit
             if (r.group.position.y <= 0) {
-                this.effects.createExplosion(r.group.position.clone(), 5, 0xff4400);
+                const gp = r.group.position.clone();
+                gp.y = 0;
+                this._detonateRocket(gp);
                 r.life = 0;
+            }
+
+            // Building collision: ray-test the rocket vs collidable buildings
+            if (r.life > 0 && this._collidables) {
+                for (let cb = 0; cb < this._collidables.length; cb++) {
+                    const m = this._collidables[cb];
+                    if (!m.parent) continue; // already removed
+                    if (this._pointInBuildingMesh(r.group.position, m)) {
+                        this._detonateRocket(r.group.position.clone());
+                        r.life = 0;
+                        break;
+                    }
+                }
             }
 
             if (r.life <= 0) {
@@ -169,6 +194,21 @@ class WeaponsManager {
         }
 
         return hits;
+    }
+
+    /**
+     * Tell weapons about collidable building meshes for rocket impact tests.
+     */
+    setCollidables(list) { this._collidables = list; }
+
+    _pointInBuildingMesh(p, mesh) {
+        // Buildings are axis-aligned boxes with center at mesh.position
+        const g = mesh.geometry && mesh.geometry.parameters;
+        if (!g || g.width == null) return false;
+        const hw = g.width / 2, hh = g.height / 2, hd = g.depth / 2;
+        return p.x >= mesh.position.x - hw && p.x <= mesh.position.x + hw &&
+               p.y >= mesh.position.y - hh && p.y <= mesh.position.y + hh &&
+               p.z >= mesh.position.z - hd && p.z <= mesh.position.z + hd;
     }
 
     dispose() {

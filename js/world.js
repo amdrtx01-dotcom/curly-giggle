@@ -6,6 +6,7 @@ class World {
         this.objects = [];
         this.collidables = [];
         this.worldSize = 500;
+        this.destruction = null; // Set by Game; if present, buildings are destructible
     }
 
     buildCity() {
@@ -85,8 +86,18 @@ class World {
         }
         groundGeom.computeVertexNormals();
 
+        // Pick a procedural texture based on the colour
+        let texName = 'grass';
+        if (color1 === 0xc4a35a || color1 === 0x9a8040) texName = 'sand';
+        const groundTex = (typeof Textures !== 'undefined') ? Textures.get(texName) : null;
+        if (groundTex) {
+            groundTex.repeat.set(40, 40);
+            groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+        }
+
         const groundMat = new THREE.MeshPhongMaterial({
             color: color1,
+            map: groundTex || null,
             specular: 0x111111,
             shininess: 5
         });
@@ -235,7 +246,13 @@ class World {
     }
 
     addCityBuildings() {
-        const buildingColors = [0x334455, 0x445566, 0x2a3a4a, 0x3a4a5a, 0x556677];
+        const palettes = [
+            { base: '#3a4a5a', accent: '#1a2a3a' },
+            { base: '#4a5566', accent: '#2a3344' },
+            { base: '#2a3a4a', accent: '#0a1a2a' },
+            { base: '#5a4a3a', accent: '#3a2a1a' },
+            { base: '#556677', accent: '#334455' }
+        ];
 
         for (let i = 0; i < 80; i++) {
             const w = Utils.randomRange(6, 20);
@@ -248,10 +265,11 @@ class World {
             // Keep away from spawn
             if (Math.abs(x) < 30 && Math.abs(z) < 30) continue;
 
-            const color = buildingColors[Utils.randomInt(0, buildingColors.length - 1)];
+            const palette = palettes[Utils.randomInt(0, palettes.length - 1)];
+            const baseColorHex = parseInt(palette.base.replace('#', '0x'));
             const geom = new THREE.BoxGeometry(w, h, d);
             const mat = new THREE.MeshPhongMaterial({
-                color: color,
+                color: baseColorHex,
                 specular: 0x222233,
                 shininess: 30
             });
@@ -263,8 +281,25 @@ class World {
             this.objects.push(building);
             this.collidables.push(building);
 
-            // Windows
-            this.addWindows(building, w, h, d, x, z);
+            // Roof detail
+            const roofGeom = new THREE.BoxGeometry(w * 0.7, 1, d * 0.7);
+            const roofMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
+            const roof = new THREE.Mesh(roofGeom, roofMat);
+            roof.position.set(x, h + 0.5, z);
+            this.scene.add(roof);
+            this.objects.push(roof);
+
+            // 3D plane windows
+            const windows = this.addWindows(building, w, h, d, x, z);
+
+            // Register as destructible
+            if (this.destruction) {
+                this.destruction.registerBuilding(building, {
+                    children: [roof].concat(windows || []),
+                    color: baseColorHex,
+                    health: 40 + w * d * 0.3
+                });
+            }
         }
     }
 
@@ -283,6 +318,7 @@ class World {
             { axis: 'z', dir: -1, size: w }
         ];
 
+        const windows = [];
         sides.forEach(side => {
             const windowsPerFloor = Math.floor(side.size / 4);
             for (let floor = 0; floor < floors; floor++) {
@@ -306,9 +342,11 @@ class World {
 
                     this.scene.add(win);
                     this.objects.push(win);
+                    windows.push(win);
                 }
             }
         });
+        return windows;
     }
 
     addTrees(count) {
@@ -342,7 +380,9 @@ class World {
     }
 
     addRoads() {
-        const roadMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
+        const roadTex = (typeof Textures !== 'undefined') ? Textures.get('asphalt') : null;
+        if (roadTex) roadTex.repeat.set(1, 40);
+        const roadMat = new THREE.MeshPhongMaterial({ color: 0x333333, map: roadTex || null });
         const lineMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
 
         // Main roads

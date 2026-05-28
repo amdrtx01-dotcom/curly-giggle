@@ -56,9 +56,11 @@ class Game {
         this.controls = new Controls();
         this.hud = new HUD();
         this.effects = new EffectsManager(this.scene);
-        this.weapons = new WeaponsManager(this.scene, this.effects);
+        this.destruction = new DestructionManager(this.scene, this.effects);
+        this.weapons = new WeaponsManager(this.scene, this.effects, this.destruction);
         this.targetManager = new TargetManager(this.scene);
         this.world = new World(this.scene);
+        this.world.destruction = this.destruction;
 
         // Resize handler
         window.addEventListener('resize', () => this.onResize());
@@ -100,6 +102,9 @@ class Game {
         // Spawn targets
         this.targetManager.spawnTargets(this.currentLevel.targets);
 
+        // Tell weapons about collidable buildings
+        this.weapons.setCollidables(this.world.collidables);
+
         this.start();
         this.hud.showNotification('УРОВЕНЬ ' + this.currentLevel.id + ': ' + this.currentLevel.name);
     }
@@ -126,6 +131,9 @@ class Game {
         }
         this.targetManager.spawnTargets(randomTargets);
 
+        // Tell weapons about collidable buildings
+        this.weapons.setCollidables(this.world.collidables);
+
         this.start();
         this.hud.showNotification('СВОБОДНЫЙ ПОЛЁТ');
     }
@@ -133,6 +141,7 @@ class Game {
     setupScene() {
         // Clear previous
         if (this.drone) this.drone.dispose();
+        if (this.destruction) this.destruction.clear();
         this.world.clear();
         this.effects.dispose();
         this.weapons.dispose();
@@ -231,8 +240,9 @@ class Game {
         // Targets
         this.targetManager.update(dt, this.drone.getPosition());
 
-        // Effects
+        // Effects + destruction physics
         this.effects.update(dt);
+        if (this.destruction) this.destruction.update(dt);
 
         // Engine particles
         if (input.forward || input.up) {
