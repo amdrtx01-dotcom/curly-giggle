@@ -16,11 +16,20 @@ class Drone {
         this.maxRockets = 8;
 
         this.speed = 0;
-        this.maxSpeed = 80;
-        this.thrustPower = 35;
-        this.liftPower = 25;
-        this.turnSpeed = 2.0;
-        this.drag = 0.96;
+
+        // === Realistic quadcopter physics (SI units) ===
+        // Mass ~1.2kg, gravity 9.81 m/s². At hover thrustPerKg=g, throttle 1 gives 2g.
+        this.mass = 1.2;
+        this.gravity = 9.81;
+        this.maxThrustAccel = 2 * this.gravity; // m/s² at full throttle (TWR 2:1)
+        this.maxTiltAngle = Math.PI / 3;        // 60° max tilt for aggressive maneuvers
+        this.tiltResponse = 8;                  // how fast body tilts toward target
+        this.yawRate = 2.4;                     // rad/s yaw at full stick
+        this.maxHorizSpeed = 45;                // m/s (~162 km/h)
+        this.maxVertSpeed = 30;                 // m/s
+        // Aerodynamic drag (linear coefficient: a_drag = -k * v).
+        this.horizDrag = 0.6;  // 1/s
+        this.vertDrag = 0.4;   // 1/s
         this.rotorSpeed = 0;
         this.targetRotorSpeed = 0;
 
@@ -434,91 +443,98 @@ class Drone {
     update(dt, input) {
         if (this.health <= 0) return;
 
-        // Thrust
-        const thrust = new THREE.Vector3();
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.group.quaternion);
-        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.group.quaternion);
+        // Cap dt so we stay stable when the page lags
+        if (dt > 0.05) dt = 0.05;
 
-        // Use analog values if available, fall back to boolean
-        const pitchAmount = input.pitch !== undefined ? Math.abs(input.pitch) : (input.forward || input.backward ? 1 : 0);
-        const rollAmount = input.roll !== undefined ? Math.abs(input.roll) : (input.left || input.right ? 1 : 0);
+        // === Resolve sticks → analog values in [-1, 1] ===
+        // pitch: forward (+) / back (-),  roll: right (+) / left (-)
+        // throttle: up (+) / down (-),    yaw: turn right (+) / left (-)
+        const fromKeys = (pos, neg) => (pos ? 1 : 0) - (neg ? 1 : 0);
+        let pitchCmd    = input.pitch    !== undefined ? input.pitch    : fromKeys(input.forward,  input.backward);
+        let rollCmd     = input.roll     !== undefined ? input.roll     : fromKeys(input.right,    input.left);
+        let throttleCmd = input.throttle !== undefined ? input.throttle : fromKeys(input.up,       input.down);
+        let yawCmd      = input.yaw      !== undefined ? input.yaw      : fromKeys(input.rotateRight, input.rotateLeft);
 
-        if (input.forward) thrust.add(forward.clone().multiplyScalar(this.thrustPower * pitchAmount * dt));
-        if (input.backward) thrust.add(forward.clone().multiplyScalar(-this.thrustPower * 0.6 * pitchAmount * dt));
-        if (input.left) thrust.add(right.clone().multiplyScalar(-this.thrustPower * 0.7 * rollAmount * dt));
-        if (input.right) thrust.add(right.clone().multiplyScalar(this.thrustPower * 0.7 * rollAmount * dt));
+        pitchCmd    = Utils.clamp(pitchCmd,    -1, 1);
+        rollCmd     = Utils.clamp(rollCmd,     -1, 1);
+        throttleCmd = Utils.clamp(throttleCmd, -1, 1);
+        yawCmd      = Utils.clamp(yawCmd,      -1, 1);
 
-        // Vertical
-        const throttleAmount = input.throttle !== undefined ? Math.abs(input.throttle) : 1;
-        if (input.up) thrust.y += this.liftPower * throttleAmount * dt;
-        if (input.down) thrust.y -= this.liftPower * 0.8 * throttleAmount * dt;
-
-        // Gravity
-        thrust.y -= 9.8 * dt;
-
-        // Hover compensation when no vertical input
-        if (!input.up && !input.down && this.group.position.y > 2) {
-            thrust.y += 9.0 * dt;
-        }
-
-        this.velocity.add(thrust);
-        this.velocity.multiplyScalar(this.drag);
-
-        // Clamp speed
-        const horizSpeed = new THREE.Vector2(this.velocity.x, this.velocity.z).length();
-        if (horizSpeed > this.maxSpeed * dt) {
-            const factor = (this.maxSpeed * dt) / horizSpeed;
-            this.velocity.x *= factor;
-            this.velocity.z *= factor;
-        }
-
-        this.group.position.add(this.velocity.clone().multiplyScalar(dt * 60));
-
-        // Ground collision
-        if (this.group.position.y < 1.5) {
-            this.group.position.y = 1.5;
-            this.velocity.y = Math.max(0, this.velocity.y);
-        }
-
-        // Ceiling
-        if (this.group.position.y > 200) {
-            this.group.position.y = 200;
-            this.velocity.y = Math.min(0, this.velocity.y);
-        }
-
-        // Rotation / Yaw
-        const yawAmount = input.yaw !== undefined ? input.yaw : 0;
-        if (input.rotateLeft) this.group.rotation.y += this.turnSpeed * dt;
-        if (input.rotateRight) this.group.rotation.y -= this.turnSpeed * dt;
-
-        // Mouse-based yaw
+        // === Yaw (heading) ===
         if (input.mouseX) {
             this.group.rotation.y -= input.mouseX * 0.002;
             input.mouseX = 0;
         }
+        this.group.rotation.y -= yawCmd * this.yawRate * dt;
 
-        // Tilt based on movement — more realistic FPV feel
-        const targetPitch = input.pitch !== undefined ?
-            -input.pitch * 0.2 :
-            (input.forward ? -0.15 : 0) + (input.backward ? 0.1 : 0);
-
-        const targetRoll = input.roll !== undefined ?
-            -input.roll * 0.2 :
-            (input.left ? 0.15 : 0) + (input.right ? -0.15 : 0);
-
-        this.pitchAngle = Utils.lerp(this.pitchAngle, targetPitch, 5 * dt);
-        this.rollAngle = Utils.lerp(this.rollAngle, targetRoll, 5 * dt);
-
+        // === Body attitude (tilt) — quadcopters move by tilting ===
+        // pitch forward → nose down → fly forward; roll right → roll right → strafe right
+        const targetPitch = -pitchCmd * this.maxTiltAngle * 0.7;
+        const targetRoll  = -rollCmd  * this.maxTiltAngle * 0.7;
+        const tiltAlpha = 1 - Math.exp(-this.tiltResponse * dt); // dt-stable lerp
+        this.pitchAngle = Utils.lerp(this.pitchAngle, targetPitch, tiltAlpha);
+        this.rollAngle  = Utils.lerp(this.rollAngle,  targetRoll,  tiltAlpha);
         this.group.rotation.x = this.pitchAngle;
         this.group.rotation.z = this.rollAngle;
 
-        // Speed calculation
-        this.speed = this.velocity.length() * 60 * 3.6;
+        // === Forces ===
+        // Throttle in [0, 1] (a "collective" stick from the throttle command, biased so
+        // neutral hovers automatically). Negative throttle → descend faster.
+        const collective = Utils.clamp(0.5 + 0.5 * throttleCmd, 0, 1);
+        const thrustAccelMag = collective * this.maxThrustAccel; // m/s²
 
-        // Propeller animation
-        const isMoving = input.forward || input.backward || input.left || input.right || input.up || input.down;
-        this.targetRotorSpeed = isMoving ? 60 : 30;
-        this.rotorSpeed = Utils.lerp(this.rotorSpeed, this.targetRotorSpeed, 3 * dt);
+        // Thrust direction = local up rotated by the drone's current body attitude
+        // (it only depends on pitch/roll, not yaw, so a tilted drone gets horizontal push).
+        const bodyUp = new THREE.Vector3(0, 1, 0);
+        const tilt = new THREE.Euler(this.pitchAngle, this.group.rotation.y, this.rollAngle, 'YXZ');
+        bodyUp.applyEuler(tilt);
+
+        const accel = bodyUp.multiplyScalar(thrustAccelMag);
+        // Gravity
+        accel.y -= this.gravity;
+
+        // Aerodynamic drag (separately horizontal vs vertical)
+        accel.x -= this.velocity.x * this.horizDrag;
+        accel.z -= this.velocity.z * this.horizDrag;
+        accel.y -= this.velocity.y * this.vertDrag;
+
+        // Integrate velocity (semi-implicit Euler)
+        this.velocity.addScaledVector(accel, dt);
+
+        // Clamp speeds
+        const horiz = new THREE.Vector2(this.velocity.x, this.velocity.z);
+        if (horiz.length() > this.maxHorizSpeed) {
+            horiz.setLength(this.maxHorizSpeed);
+            this.velocity.x = horiz.x;
+            this.velocity.z = horiz.y;
+        }
+        if (Math.abs(this.velocity.y) > this.maxVertSpeed) {
+            this.velocity.y = Math.sign(this.velocity.y) * this.maxVertSpeed;
+        }
+
+        // Integrate position (velocity is already in m/s, so no fudge factor)
+        this.group.position.addScaledVector(this.velocity, dt);
+
+        // Ground collision (soft floor — keep a slight rebound damping)
+        if (this.group.position.y < 1.5) {
+            this.group.position.y = 1.5;
+            if (this.velocity.y < 0) this.velocity.y = 0;
+        }
+        // Ceiling
+        if (this.group.position.y > 200) {
+            this.group.position.y = 200;
+            if (this.velocity.y > 0) this.velocity.y = 0;
+        }
+
+        // Speed in km/h for HUD
+        this.speed = this.velocity.length() * 3.6;
+
+        // Propeller animation — RPM scales with collective + maneuver intensity
+        const maneuver = Math.abs(pitchCmd) + Math.abs(rollCmd) + Math.abs(yawCmd);
+        const isMoving = collective > 0.05 || maneuver > 0.05;
+        this.targetRotorSpeed = 30 + collective * 50 + maneuver * 12;
+        const rotorAlpha = 1 - Math.exp(-3 * dt);
+        this.rotorSpeed = Utils.lerp(this.rotorSpeed, this.targetRotorSpeed, rotorAlpha);
 
         this.propellers.forEach(prop => {
             prop.group.rotation.y += this.rotorSpeed * dt * prop.direction;
